@@ -226,7 +226,6 @@ const MovieDetails = ({selectedId, handleCloseMovie, handleAddWatched, watched})
     Director: director,
     Genre: genre
   } = movie
-  console.log(movie)
   const handleAdd = () => {
     const newWatchedMovie = {
       imdbID: selectedId,
@@ -250,6 +249,15 @@ const MovieDetails = ({selectedId, handleCloseMovie, handleAddWatched, watched})
     }
     getMovieDetails()
   }, [selectedId])
+  useEffect(() => {
+    if (!title) {
+      return
+    }
+    document.title = `movie: ${title}`
+    return () => {
+      document.title = 'usePopcorn'
+    }
+  }, [title])
   return (
     <div className="details">
       {isLoading? <Loader /> :
@@ -303,11 +311,12 @@ export default function App() {
     setWatched((watched) => watched.filter((movie) => movie.imdbID !== id))
   }
   useEffect(function (){
+    const controller = new AbortController()
     async function fetchMoives() {
       try {
         setIsLoading(true)
         setError("")
-        const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`)
+        const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`, {signal: controller.signal})
         if (!res.ok) {
           throw new Error("something went wrong with fetching movies")
         }
@@ -316,10 +325,13 @@ export default function App() {
           throw new Error("movie not found")
         }
         setMovies(data.Search)
+        setError("")
       }
       catch (err) {
-        console.log(err.message)
-        setError(err.message)
+        if (err.name !== 'AbortError') {
+          console.log(err.message)
+          setError(err.message)
+        }
       }
       finally {
         setIsLoading(false)
@@ -331,6 +343,9 @@ export default function App() {
       return
     }
     fetchMoives()
+    return () => {
+      controller.abort()
+    }
   }, [query])
   return (
     <>
