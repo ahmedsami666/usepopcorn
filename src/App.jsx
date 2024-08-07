@@ -258,6 +258,20 @@ const MovieDetails = ({selectedId, handleCloseMovie, handleAddWatched, watched})
       document.title = 'usePopcorn'
     }
   }, [title])
+  useEffect(() => {
+    document.addEventListener('keydown', (e) => {
+      if (e.code === "Escape") {
+        handleCloseMovie()
+      }
+    })
+    return () => {
+      document.removeEventListener("keydown", (e) => {
+        if (e.code === "Escape") {
+          handleCloseMovie()
+        }
+      })
+    }
+  }, [handleAddWatched])
   return (
     <div className="details">
       {isLoading? <Loader /> :
