@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 
-const tempMovieData = [
+/*const tempMovieData = [
   {
     imdbID: "tt1375666",
     Title: "Inception",
@@ -45,8 +45,7 @@ const tempWatchedData = [
     imdbRating: 8.5,
     userRating: 9,
   },
-];
-
+];*/
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
 
@@ -68,8 +67,7 @@ const Logo = () => {
   )
 }
 
-const Search = () => {
-  const [query, setQuery] = useState("");
+const Search = ({query, setQuery}) => {
   return (
     <input
       className="search"
@@ -196,19 +194,65 @@ const WatchedMovie = ({movie}) => {
               </li>
   )
 }
+const Loader = () => {
+  return (
+    <p className="loader">Loading...</p>
+  )
+}
+const ErrorMessage = ({message}) => {
+  return (
+    <p className="error">{message}</p>
+  )
+}
 export default function App() {
-  const [movies, setMovies] = useState(tempMovieData);
-  const [watched, setWatched] = useState(tempWatchedData);
-
+  const [query, setQuery] = useState('')
+  const [movies, setMovies] = useState([]);
+  const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const KEY = 'd1f3c20e'
+  
+  useEffect(function (){
+    async function fetchMoives() {
+      try {
+        setIsLoading(true)
+        setError("")
+        const res = await fetch(`http://www.omdbapi.com/?apikey=${KEY}&s=${query}`)
+        if (!res.ok) {
+          throw new Error("something went wrong with fetching movies")
+        }
+        const data = await res.json()
+        if (data.Response === "False") {
+          throw new Error("movie not found")
+        }
+        setMovies(data.Search)
+      }
+      catch (err) {
+        console.log(err.message)
+        setError(err.message)
+      }
+      finally {
+        setIsLoading(false)
+      }
+    }
+    if (query.length < 3) {
+      setMovies([])
+      setError('')
+      return
+    }
+    fetchMoives()
+  }, [query])
   return (
     <>
       <Navbar>
-        <Search />
+        <Search query={query} setQuery={setQuery}/>
         <NumResults movies={movies}/>
       </Navbar>
       <Main>
         <Box>
-          <MoviesList movies={movies} />
+          {isLoading && <Loader />}
+          {!isLoading && !error && <MoviesList movies={movies} />}
+          {error && <ErrorMessage message={error}/>}
         </Box>
         <Box>
           <>
